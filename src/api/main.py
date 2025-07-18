@@ -18,6 +18,7 @@ from logging_config import configure_logging
 enable_trace = False
 logger = None
 
+
 @contextlib.asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
     agent = None
@@ -50,7 +51,7 @@ async def lifespan(app: fastapi.FastAPI):
                 logger.info("Configured Application Insights for tracing.")
 
         if agent_id:
-            try: 
+            try:
                 agent = await ai_project.agents.get_agent(agent_id)
                 logger.info("Agent already exists, skipping creation")
                 logger.info(f"Fetched agent, agent ID: {agent.id}")
@@ -74,7 +75,7 @@ async def lifespan(app: fastapi.FastAPI):
 
         app.state.ai_project = ai_project
         app.state.agent = agent
-        
+
         yield
 
     except Exception as e:
@@ -117,7 +118,7 @@ def create_app():
     directory = os.path.join(os.path.dirname(__file__), "static")
     app = fastapi.FastAPI(lifespan=lifespan)
     app.mount("/static", StaticFiles(directory=directory), name="static")
-    
+
     # Mount React static files
     # Uncomment the following lines if you have a React frontend
     # react_directory = os.path.join(os.path.dirname(__file__), "static/react")
@@ -134,5 +135,5 @@ def create_app():
             status_code=500,
             content={"detail": "Internal server error"}
         )
-    
+
     return app

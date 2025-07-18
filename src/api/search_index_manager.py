@@ -28,7 +28,6 @@ from azure.search.documents.indexes.models import (
 from azure.search.documents.models import VectorizableTextQuery
 
 
-
 class SearchIndexManager:
     """
     The class for searching of context for user queries.
@@ -46,14 +45,13 @@ class SearchIndexManager:
     :param embedding_client: The embedding client, used t build the embedding. Needed only
                              to create embedding file. Not used in inference time.
     """
-    
+
     MIN_DIFF_CHARACTERS_IN_LINE = 5
     MIN_LINE_LENGTH = 5
-    
+
     _SEMANTIC_CONFIG = "semantic_search"
     _EMBEDDING_CONFIG = "embedding_config"
     _VECTORIZER = "search_vectorizer"
-
 
     def __init__(
             self,
@@ -86,7 +84,7 @@ class SearchIndexManager:
             self._client = SearchClient(
                 endpoint=self._endpoint, index_name=self._index.name, credential=self._credential)
         return self._client
-    
+
     async def upload_documents(self, embeddings_file: str) -> None:
         """
         Upload the embeggings file to index search.
@@ -171,7 +169,7 @@ class SearchIndexManager:
             semantic_configuration_name=SearchIndexManager._SEMANTIC_CONFIG,
         )
         return await self._format_search_results(response)
-        
+
 
     async def search(self, message: str) -> str:
         """
@@ -224,7 +222,7 @@ class SearchIndexManager:
             async with SearchIndexClient(endpoint=self._endpoint, credential=self._credential) as ix_client:
                 self._index = await ix_client.get_index(self._index_name)
             return False
-        
+
     async def _index_create(self, vector_index_dimensions: int) -> SearchIndex:
         """
         Create the index.
@@ -293,7 +291,7 @@ class SearchIndexManager:
                 semantic_search=semantic_search)
             new_index = await ix_client.create_index(search_index)
         return new_index
-        
+
 
     async def build_embeddings_file(
             self,
@@ -317,7 +315,7 @@ class SearchIndexManager:
         """
         import nltk
         nltk.download('punkt')
-        
+
         from nltk.tokenize import sent_tokenize
         # Split the data to sentence tokens.
         sentence_tokens = []
@@ -339,8 +337,7 @@ class SearchIndexManager:
                             sentence_tokens[-1] += ' '
                             sentence_tokens[-1] += sentence
                         index += 1
-        
-        
+
         # For each token build the embedding, which will be used in the search.
         batch_size = 2000
         with open(output_file, 'w') as fp:

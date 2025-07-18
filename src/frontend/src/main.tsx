@@ -2,15 +2,23 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './components/App';
 
-// Mount the React app to a div with id "react-root" that we'll add to the HTML
-const rootElement = document.getElementById('react-root');
+import { PublicClientApplication } from '@azure/msal-browser';
+import { MsalProvider } from '@azure/msal-react';
+import { msalConfig } from './components/core/Login/authConfig'; // make sure this exists
+
+
+const msalInstance = new PublicClientApplication(msalConfig);
+
+const rootElement = document.getElementById("react-root");
 
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <MsalProvider instance={msalInstance}>
+        <App />
+      </MsalProvider>
     </React.StrictMode>
   );
 } else {
-  console.error('Failed to find the react-root element');
+  console.error("Failed to find the react-root element");
 }

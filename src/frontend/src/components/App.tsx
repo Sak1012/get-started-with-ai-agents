@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { AgentPreview } from "./agents/AgentPreview";
+import Login from "./core/Login/Login";
 import { ThemeProvider } from "./core/theme/ThemeProvider";
 
 const App: React.FC = () => {
-  // State to store the agent details
   const [agentDetails, setAgentDetails] = useState({
     id: "loading",
     object: "agent",
@@ -16,7 +16,36 @@ const App: React.FC = () => {
     },
   });
 
-  // Fetch agent details when component mounts
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+
+  // Verify token with backend
+  useEffect(() => {
+    const verify = async () => {
+      if (!accessToken) return;
+
+      try {
+        const response = await fetch("/auth/verify", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.ok) {
+          setIsVerified(true);
+        } else {
+          console.error("Token verification failed");
+        }
+      } catch (err) {
+        console.error("Verification error:", err);
+      }
+    };
+
+    verify();
+  }, [accessToken]);
+
+  // Fetch agent details regardless
   useEffect(() => {
     const fetchAgentDetails = async () => {
       try {
@@ -28,46 +57,21 @@ const App: React.FC = () => {
           credentials: "include",
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log(
-            "Agent details fetched successfully:",
-            JSON.stringify(data)
-          );
-          console.log(
-            "Agent details fetched successfully 2:",
-            JSON.stringify(response)
-          );
-          setAgentDetails(data);
-        } else {
-          console.error("Failed to fetch agent details");
-          // Set fallback data if fetch fails
-          setAgentDetails({
-            id: "fallback",
-            object: "agent",
-            created_at: Date.now(),
-            name: "AI Agent",
-            description: "Could not load agent details",
-            model: "default",
-            metadata: {
-              logo: "robot",
-            },
-          });
-        }
+        const data = await response.ok
+          ? await response.json()
+          : {
+              id: "fallback",
+              object: "agent",
+              created_at: Date.now(),
+              name: "AI Agent",
+              description: "Could not load agent details",
+              model: "default",
+              metadata: { logo: "robot" },
+            };
+
+        setAgentDetails(data);
       } catch (error) {
         console.error("Error fetching agent details:", error);
-        // Set fallback data if fetch fails
-        setAgentDetails({
-          id: "error",
-          object: "agent",
-          created_at: Date.now(),
-          name: "AI Agent",
-          description: "Error loading agent details",
-          model: "default",
-          metadata: {
-            logo: "robot",
-          },
-        });
       }
     };
 
@@ -77,10 +81,33 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <div className="app-container">
-        <AgentPreview
-          resourceId="sample-resource-id"
-          agentDetails={agentDetails}
-        />
+        {!isVerified && <Login setAccessToken={setAccessToken} />}
+        <div style={{ position: "relative" }}>
+          <AgentPreview
+            resourceId="sample-resource-id"
+            agentDetails={agentDetails}
+          />
+
+          {!isVerified && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(255,255,255,0.6)",
+                zIndex: 9999,
+                pointerEvents: "all",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+				cursor: "not-allowed",
+              }}
+            >
+            </div>
+          )}
+        </div>
       </div>
     </ThemeProvider>
   );
