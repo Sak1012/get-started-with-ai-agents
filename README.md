@@ -52,6 +52,142 @@ Here is a screenshot showing the chatting web application with requests and resp
 
 ## Getting Started
 
+## Entra ID App Registration and Code Configuration
+
+### Steps
+
+1. **Create App Registrations**  
+   Create a app registrations using the Azure portal:
+   - `purview-ai-agents`
+
+2. **Record Client ID**  
+   Note down the **Application (Client ID)** for the application from the **Overview** section in **App Registrations**.
+
+3. **Add the Permissions  (`Content.Process.User` and `ProtectionScopes.Compute.User`) in the App Registration**  
+   Add a new scope to the **azure-search-openai-demo-frontend** app registration with the following steps:
+   - In the registered app go to `Manage > API permissions`.
+   - Select `Add a Permission`
+   - Choose `Microsoft graph` and select `Delgated Permissions`.
+   - Search for `Content.Process.User` and Select the permission.
+   - Search for `ProtectionScopes.Compute.User` and Select the permission.
+   - Ensure that Grant admin consent is invoked by an administrator.
+
+4. **Configure Redirect URIs for Frontend App**  
+   - Add the following redirect URIs to the `purview-ai-agents` app registration in `Manage > Authentication`
+     - `http://localhost:8000/` (Make sure this matches the port of your local setup)
+     > This Port allows hot reloading for frontend while using the poweshell script
+     - URL of the deployed web app (retrieved from the Azure portal or printed as "Endpoint" after `azd` completes).
+
+5. **Make the App support Multi-teant ID's**
+    - Go to `Manage > Authentication` 
+    - Under Supported account types select `Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant)`
+
+6. Setup Local Environment and Deploy
+
+## Local Environment
+
+1. Install the required tools:
+
+    - [Azure Developer CLI](https://aka.ms/azure-dev/install)
+    - [Python 3.9, 3.10, or 3.11](https://www.python.org/downloads/)
+      - **Important**: Python and the pip package manager must be in the path in Windows for the setup scripts to work.
+      - **Important**: Ensure you can run `python --version` from console. On Ubuntu, you might need to run `sudo apt install python-is-python3` to link `python` to `python3`.
+    - [Node.js 20+](https://nodejs.org/download/)
+    - [Git](https://git-scm.com/downloads)
+    - [Powershell 7+ (pwsh)](https://github.com/powershell/powershell) - For Windows users only.
+      - **Important**: Ensure you can run `pwsh.exe` from a PowerShell terminal. If this fails, you likely need to upgrade PowerShell.
+
+2. Clone this repo:
+  
+```bash  
+git clone https://github.com/Sak1012/get-started-with-ai-agents.git
+
+```
+3. Add the Client ID
+
+  - For the frontend MSAL authentication go to `src>frontend>src>components>core>Login>authconfig.ts`
+  ```ts
+    export const msalConfig = {
+      auth: {
+        clientId: "YOUR_CLIENT_ID",
+        authority: "https://login.microsoftonline.com/organizations",
+        redirectUri: "/",
+    	clientCapabilities: ["cp1"],
+      },
+      cache: {
+    	cacheLocation: "sessionStorage",
+    	storeAuthStateInCookie: false,
+      },
+    };
+  ```
+  - For Backend SDK go to `src>api>p4ai>msalconfig.py`
+  ```python
+      MSAL_CONFIG = {
+          "client_id": "YOUR_CLIENT_ID",
+      }
+  ```
+
+> Use the same client ID in both places you can copy the client ID from the Overview page of the App Registration.
+
+4. Continue with [Deployment](#deploying-for-p4ai) and [Development Server](#running-the-development-server).
+
+## Deploying for P4AI
+
+The steps below will provision Azure resources and deploy the application code to Azure Container Apps. To deploy to Azure App Service instead, follow [the app service deployment guide](docs/azure_app_service.md).
+
+1. Login to your Azure account:
+
+    ```shell
+    azd auth login
+    ```
+
+    For GitHub Codespaces users, if the previous command fails, try:
+
+   ```shell
+    azd auth login --use-device-code
+    ```
+
+2. Create a new azd environment:
+
+    ```shell
+    azd env new
+    ```
+
+    Enter a name that will be used for the resource group.
+    This will create a new folder in the `.azure` folder, and set it as the active environment for any calls to `azd` going forward.
+3. (Optional) This is the point where you can customize the deployment by setting environment variables, in order to [use existing resources](docs/deploy_existing.md), [enable optional features (such as auth or vision)](docs/deploy_features.md), or [deploy low-cost options](docs/deploy_lowcost.md), or [deploy with the Azure free trial](docs/deploy_freetrial.md).
+4. Run `azd up` - This will provision Azure resources and deploy this sample to those resources, including building the search index based on the files found in the `./data` folder.
+    - **Important**: Beware that the resources created by this command will incur immediate costs, primarily from the AI Search resource. These resources may accrue costs even if you interrupt the command before it is fully executed. You can run `azd down` or delete the resources manually to avoid unnecessary spending.
+5. After the application has been successfully deployed you will see a URL printed to the console.  Click that URL to interact with the application in your browser.
+It will look like the following:
+
+> NOTE: It may take 5-10 minutes after you see 'SUCCESS' for the application to be fully deployed. If you see a "Python Developer" welcome screen or an error page, then wait a bit and refresh the page.
+> Make Sure to Add the deployed URL to the Redirect URI's of the APP registration.
+
+
+## Running the Development Server
+
+**For Windows**
+
+- Once the app is deployed and the Local setup is done enter `src` and execute the powershell script
+```bash
+  ./build.ps1
+```
+
+**For MacOS or Linux**
+
+- Enter `src/frontend` and build the frontend
+```bash
+pnpm build
+```
+- Navigate back to src and run the app.
+```bash
+cd ..
+python -m uvicorn "api.main:create_app" --factory --reload
+```
+
+
+
 ### Quick Deploy
 
 | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Azure-Samples/get-started-with-ai-agents) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/Azure-Samples/get-started-with-ai-agents) |
